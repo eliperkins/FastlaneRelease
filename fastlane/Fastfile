@@ -1,0 +1,19 @@
+platform :ios
+
+lane :release do
+  carthage(
+    command: 'bootstrap',
+    use_binaries: false,
+    platform: 'iOS'
+  )
+
+  carthage(
+    command: 'build',
+    no_skip_current: true,
+    platform: 'iOS'
+  )
+
+  carthage(
+    command: 'archive'
+  )
+end
