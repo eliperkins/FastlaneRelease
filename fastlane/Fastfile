@@ -1,6 +1,16 @@
-platform :ios
+lane :release do |options|
+  version = options[:version]
+  raise 'The version is missing. Use `fastlane release version:{version_number}`.`' if version.nil?
 
-lane :release do
+  ensure_git_branch(
+    branch: '(master|release\\S+|hotfix\\S+)'
+  )
+
+  # Ensure the Carthage build directory is clean.
+  sh('rm -rf Carthage/Build')
+
+  ensure_git_status_clean
+
   carthage(
     command: 'bootstrap',
     use_binaries: false,
@@ -15,5 +25,25 @@ lane :release do
 
   carthage(
     command: 'archive'
+  )
+
+  tag = "v#{version}"
+  display_name = prompt(text: 'Release name: ')
+  name = "#{tag}: #{display_name}"
+
+  should_abort = !prompt(
+    text: "Are you sure you want to release #{name}?",
+    boolean: true
+  )
+
+  raise "Aborting release of #{tag}" if should_abort
+
+  github_release = set_github_release(
+    repository_name: "eliperkins/FastlaneRelease",
+    api_token: ENV['GITHUB_TOKEN'],
+    name: name,
+    tag_name: tag,
+    commitish: 'master',
+    upload_assets: ['SwiftyFoo.framework.zip']
   )
 end
